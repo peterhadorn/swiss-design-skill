@@ -1,6 +1,6 @@
 ---
 name: swiss-design
-description: Build websites in the Swiss / International Typographic Style — Müller-Brockmann grids, disciplined typography, ink-on-paper restraint, and the modern agency-grade idioms (arrow-in-circle CTAs, eyebrow tags, type-as-architecture, ambient parallax) that make a Swiss-style site memorable without being noisy. Use when the brief calls for "Swiss," "minimalist," "editorial," "premium-conservative," "agency-clean," or references Mobiliar / seoagentur.de / Doppio / Stink Studios / favorit.studio / eseagency.ch.
+description: Build websites in the Swiss / International Typographic Style — Müller-Brockmann grids, disciplined typography, ink-on-paper restraint, and the modern agency-grade idioms (arrow-in-circle CTAs, eyebrow tags, type-as-architecture, ambient parallax, Lenis smooth scroll, custom cursor, oklch color, dark mode, view transitions) that make a Swiss-style site memorable without being noisy. Use when the brief calls for "Swiss," "minimalist," "editorial," "premium-conservative," "agency-clean," or references Mobiliar / seoagentur.de / Doppio / Stink Studios / favorit.studio / eseagency.ch.
 ---
 
 # Skill: Swiss Design (International Typographic Style for the Web)
@@ -71,9 +71,10 @@ A design that contains any of the following has failed:
 
 ### Banned motion
 - Default `linear` or `ease-in-out` transitions. Slop tells.
-- `window.addEventListener('scroll')` for entry animations. Use `IntersectionObserver`.
+- `window.addEventListener('scroll')` for entry animations. Use CSS `animation-timeline: view()` (preferred) or `IntersectionObserver` (fallback). See §8 pattern #6.
 - Animations that run continuously without dampening (rotating logos, pulsing CTAs, blinking arrows).
 - Mounting all elements at once. Use staggered reveals.
+- **Ignoring `prefers-reduced-motion`.** Every animation must have a reduced-motion override (see §8).
 
 ### Banned copy in design output
 - AI-marketing clichés: "Elevate," "Seamless," "Unleash," "Next-Gen," "Game-changer," "Delve," "Empower," "Revolutionize," "Transform your business."
@@ -112,7 +113,7 @@ A design that contains any of the following has failed:
 - Optical bias: bottom padding of a section is usually slightly larger than top (e.g., `padding: var(--space-3xl) 0 var(--space-4xl)`).
 
 ### Hairline rules
-- Section dividers, table rows, list separators: `1px solid` at very low contrast (`#EAEAEA` on paper, `rgba(0,0,0,0.06)` on warm substrates). These hairlines are a Swiss-design signature and replace heavy borders.
+- Section dividers, table rows, list separators: `1px solid var(--rule)` — defined in §6 as `oklch(92% 0.005 90)` (≈`#EAEAEA`). These hairlines are a Swiss-design signature and replace heavy borders.
 
 ---
 
@@ -154,6 +155,44 @@ Use **fluid `clamp()`** so type breathes responsively:
 - Use **medium (500)** weight more than people expect — it's the workhorse weight in Swiss design (regular reads thin, bold reads heavy; medium is the editorial sweet spot).
 - Fix orphans with `text-wrap: balance` (headlines) and `text-wrap: pretty` (body).
 
+### Baseline CSS (apply globally before any component)
+```css
+html {
+  font-optical-sizing: auto;        /* enables opsz axis in variable fonts */
+  text-rendering: optimizeLegibility;
+  -webkit-text-size-adjust: 100%;
+}
+body {
+  font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+}
+h1, h2, h3, h4 {
+  text-wrap: balance;
+  font-feature-settings: "kern" 1, "liga" 1;
+}
+p, li, figcaption, blockquote { text-wrap: pretty; }
+```
+
+**Variable font intermediate weights** — variable fonts allow sub-step precision:
+```css
+h2           { font-weight: 450; }   /* between Regular and Medium — very Swiss */
+.eyebrow     { font-weight: 520; }
+.stat-label  { font-weight: 480; }
+```
+
+**OpenType features** — Suisse Int'l, GT America, Söhne all carry alternates:
+```css
+.headline-alt  { font-feature-settings: "ss01" 1; }  /* alt a, g forms */
+.body-humanist { font-variant-numeric: oldstyle-nums; }
+```
+
+**Hyphenation** — Swiss print tradition. Web supports it natively. Set regional `lang` on the root: `<html lang="de-CH">` (or `fr-CH`, `it-CH`). The `:lang()` pseudo-class inherits through the DOM, so inline `<section lang="fr-CH">` switches correctly:
+```css
+:lang(de), :lang(de-CH) { hyphens: auto; hyphenate-limit-chars: 8 4 3; }
+:lang(fr), :lang(fr-CH) { hyphens: auto; hyphenate-limit-chars: 10 4 3; }
+:lang(it), :lang(it-CH) { hyphens: auto; hyphenate-limit-chars: 8 3 3; }
+h1, h2, h3, .eyebrow    { hyphens: none; }  /* never on display type */
+```
+
 ### Color of type
 - Body: **off-black**, never `#000`. Use `#111`, `#1A1A1A`, or `#2F3437`.
 - Muted/secondary: a single neutral gray (warm-tinted if substrate is warm, cool if substrate is cool — *never both*). e.g. `#787774` on warm bone paper.
@@ -170,6 +209,36 @@ A Swiss design has at most **four colors**:
 3. **Rule** — hairline gray. `#EAEAEA`, `#E5E5E2`, or `rgba(0,0,0,0.06)`.
 4. **Accent** — exactly **one**. Used for CTAs, links, the hero word the page wants you to remember, the active nav state. Saturation < 80%. Common Swiss-agency choices: deep red (Mobiliar tradition), aviation red (`#E61919`), wine, deep blue (`#0033A0`), forest green. Pick one and use it with violence.
 
+### Preferred color definition: `oklch()`
+`oklch()` is perceptually uniform — the closest CSS equivalent to Pantone precision. Define all four colors in oklch:
+```css
+:root {
+  --paper:  oklch(98% 0.005 90);    /* warm off-white */
+  --ink:    oklch(15% 0.010 260);   /* near-black, cool undertone */
+  --rule:   oklch(92% 0.005 90);    /* hairline gray */
+  --accent: oklch(48% 0.180 25);    /* deep red — Mobiliar-adjacent */
+}
+```
+Use `color-mix(in oklab, ...)` for tints instead of adding new variables:
+```css
+.card:hover { background: color-mix(in oklab, var(--accent) 6%, var(--paper)); }
+```
+
+### Dark mode
+Swiss dark mode is not CSS `invert`. It is a deliberate substrate swap — dark ink on dark paper. Grain blend mode flips from `multiply` to `screen`:
+```css
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper:  oklch(12% 0.010 260);   /* dark substrate, not #000 */
+    --ink:    oklch(94% 0.005 90);    /* warm off-white, not #fff */
+    --rule:   oklch(20% 0.010 260);
+    /* --accent stays same hue; optionally bump lightness +5% */
+  }
+  .grain::before  { mix-blend-mode: screen; opacity: 0.02; }
+  .ambient        { opacity: 0.03; }
+}
+```
+
 ### Brand variant: when the project has multiple brand colors
 If the brand has two related shades (e.g., a deep and bright variant of the same hue), permit:
 - Brand-deep used for primary type accents, dividers, the mark.
@@ -178,7 +247,7 @@ If the brand has two related shades (e.g., a deep and bright variant of the same
 
 ### Texture, not gradients
 - A subtle **3% film-grain noise overlay** as a fixed background or section background is permitted — gives flat color physical-paper texture. SVG noise filter is preferred (one element, GPU-cheap).
-- **Single-color radial light** at very low opacity (`opacity: 0.02–0.04`) as a `position: fixed; pointer-events: none` ambient layer is permitted as the "parallax" unifier (see §10).
+- **Single-color radial light** at very low opacity (`opacity: 0.02–0.04`) as a `position: fixed; pointer-events: none` ambient layer is permitted as the "parallax" unifier (see §8 pattern #10).
 - Linear gradients, mesh gradients, animated gradients: banned.
 
 ---
@@ -206,6 +275,21 @@ If the brand has two related shades (e.g., a deep and bright variant of the same
 - **Stat row:** 2–4 large numerals (`--text-3xl` to `--text-4xl`) with small uppercase labels below — Swiss data-display pattern. Hairline divider between each.
 - **Card grid:** 2 or 4 cards (never 3 unless the content is genuinely categorical-three). Each card: hairline border, generous padding (`--space-md` minimum), one accent moment (eyebrow, arrow, number).
 - **Comparison / pricing:** column-aligned baselines across all columns (titles, prices, feature-list-start, CTAs all at the same vertical position).
+- **Horizontal work carousel:** for portfolio / project showcases. Scroll-snap, hidden scrollbar, full touch support. Integrates with Lenis automatically:
+  ```css
+  .work-carousel {
+    display: flex; overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scroll-padding-inline: clamp(1rem, 5vw, 2.5rem);  /* matches §4 container gutters */
+    gap: var(--space-md);
+    scrollbar-width: none;
+  }
+  .work-carousel::-webkit-scrollbar { display: none; }
+  .work-carousel > * {
+    scroll-snap-align: start;
+    flex: 0 0 clamp(280px, 45vw, 640px);
+  }
+  ```
 
 ### Footer
 - Multi-column with hairline rules between columns (Doppio idiom).
@@ -215,9 +299,21 @@ If the brand has two related shades (e.g., a deep and bright variant of the same
 
 ---
 
-## 8. The 10 patterns that produce "Swiss with wow"
+## 8. The 13 patterns that produce "Swiss with wow"
 
 These are the structural-typography moments that elevate Swiss restraint into agency-grade memorability. Use **2–3 per page maximum** — moments are special because they are rare.
+
+**`prefers-reduced-motion` is mandatory on every animation in this section:**
+```css
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .ambient { animation: none; }
+}
+```
 
 ### 1. Type-as-architecture
 A viewport-bleeding headline at `clamp(4rem, 10vw, 12rem)`, ultra-tight tracking, leading 0.9. Words become structural elements. Used for hero, manifesto sections, transitional dividers between content blocks.
@@ -253,14 +349,46 @@ SVG noise at 3% opacity overlaid on the page (or specific sections) gives flat c
 }
 ```
 
-### 6. Staggered entry reveals
-Elements cascade in via IntersectionObserver. Each child gets `style="--i: <index>"` and:
+### 6. Entry reveals — two techniques
+
+**Preferred: CSS scroll-driven** (Chrome 115+ / Safari 26+, runs off-thread):
 ```css
-opacity: 0; transform: translateY(12px);
-transition: opacity 600ms cubic-bezier(0.16,1,0.3,1) calc(var(--i) * 80ms),
-            transform  600ms cubic-bezier(0.16,1,0.3,1) calc(var(--i) * 80ms);
+@keyframes reveal-up {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: none; }
+}
+.section-child {
+  animation: reveal-up linear both;
+  animation-timeline: view();
+  /* Stagger via per-element range offsets — animation-delay does NOT work
+     with view() timelines (delay is interpreted as scroll-progress, not time). */
+  animation-range:
+    entry calc(var(--i, 0) * 8%)
+    entry calc(60% + var(--i, 0) * 8%);
+}
 ```
-On `.is-visible`: `opacity: 1; transform: none;`.
+
+**Agency-grade upgrade: line-masking** — lines slide from behind a mask, like letterpress. No fade, pure geometric motion:
+```css
+.reveal-line          { overflow: hidden; display: block; }
+.reveal-line span     {
+  display: block;
+  transform: translateY(110%);
+  transition: transform 700ms cubic-bezier(0.32,0.72,0,1)
+              calc(var(--i, 0) * 100ms);
+}
+.is-visible .reveal-line span { transform: translateY(0); }
+```
+
+**Fallback: IntersectionObserver** (Firefox / progressive enhancement):
+```js
+const io = new IntersectionObserver((entries) => {
+  entries.forEach(e => { if (e.isIntersecting) e.target.classList.add('is-visible') })
+}, { threshold: 0.1 })
+document.querySelectorAll('[data-reveal]').forEach(el => io.observe(el))
+```
+
+Stagger index via `style="--i: <n>"` on each child. Use CSS scroll-driven on supported browsers, IntersectionObserver as `@supports not (animation-timeline: view())` fallback.
 
 ### 7. Disciplined asymmetry
 The grid is rigid; one element per section deliberately breaks it — a numeral overflows the right margin, a heading bleeds left into the gutter, an image overlaps two columns and the next section. **One break per section, not three.** The break should communicate the section's content (not just decorate).
@@ -286,6 +414,79 @@ A single fixed-position element behind the page with a low-opacity radial light 
   to { transform: translate(8vw, -6vh) scale(1.1); }
 }
 ```
+
+### 11. Smooth scroll (Lenis)
+Every premium Swiss site uses smooth scroll — it makes the page feel like a publication being leafed through, not a feed being dragged. Install Lenis (see §13 step 0). Key settings:
+
+| Setting | Value | Why |
+|---------|-------|-----|
+| `lerp` | `0.08` | Deliberate, Swiss — not bouncy |
+| `duration` | `1.2` | Slightly slower than default feels considered |
+| `easing` | default | Lenis's built-in is already premium |
+
+Pair with GSAP ScrollTrigger when pinning sections:
+```js
+lenis.on('scroll', ScrollTrigger.update)
+gsap.ticker.add((time) => { lenis.raf(time * 1000) })
+gsap.ticker.lagSmoothing(0)
+```
+
+### 12. Custom cursor
+A 6–8px accent-colored dot that follows with slight lag signals craftsmanship before any scroll. Expands into a ring on interactive elements:
+```css
+body { cursor: none; }
+input, textarea, [contenteditable] { cursor: text; }   /* preserve I-beam */
+
+.cursor {
+  position: fixed; top: 0; left: 0;
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--accent);
+  pointer-events: none; z-index: 9999;
+  opacity: 0;                                         /* hide until first move */
+  transition: opacity 200ms,
+              width 200ms cubic-bezier(0.32,0.72,0,1),
+              height 200ms cubic-bezier(0.32,0.72,0,1),
+              background 200ms;
+}
+.cursor.is-active      { opacity: 1; }
+.cursor.on-interactive {
+  width: 32px; height: 32px;
+  background: transparent; border: 1px solid var(--accent);
+}
+@media (hover: none) {
+  body { cursor: auto; }
+  .cursor { display: none; }
+}
+```
+```js
+const cursor = document.querySelector('.cursor')
+document.addEventListener('mousemove', ({ clientX: x, clientY: y }) => {
+  // Center the dot/ring on the cursor position
+  cursor.style.translate =
+    `${x - cursor.offsetWidth / 2}px ${y - cursor.offsetHeight / 2}px`
+  if (!cursor.classList.contains('is-active')) cursor.classList.add('is-active')
+})
+document.querySelectorAll('a, button').forEach(el => {
+  el.addEventListener('mouseenter', () => cursor.classList.add('on-interactive'))
+  el.addEventListener('mouseleave', () => cursor.classList.remove('on-interactive'))
+})
+```
+
+### 13. View Transitions API
+For multi-page and SPA navigation. Adds a deliberate, Swiss-paced fade-slide between pages (Chrome 111+):
+```css
+@view-transition { navigation: auto; }
+
+::view-transition-old(root) {
+  animation: vt-out 300ms cubic-bezier(0.16,1,0.3,1) forwards;
+}
+::view-transition-new(root) {
+  animation: vt-in  300ms cubic-bezier(0.16,1,0.3,1) forwards;
+}
+@keyframes vt-out { to   { opacity: 0; transform: translateY(-6px); } }
+@keyframes vt-in  { from { opacity: 0; transform: translateY(6px);  } }
+```
+For named transitions (hero image persisting across pages), add `view-transition-name: hero-image` to the shared element — the browser morphs it automatically.
 
 ---
 
@@ -349,6 +550,7 @@ A single fixed-position element behind the page with a low-opacity radial light 
 - Eyebrow tags shrink but stay uppercase.
 - Arrow-in-circle CTAs: full-width on mobile, the arrow circle stays.
 - Ambient layer: keep but reduce opacity to 0.02 on mobile (battery, contrast).
+- Custom cursor: hide entirely on touch via `@media (hover: none)` (handled in §8 pattern #12).
 - Never `100vh` for hero — use `min-height: 100dvh`.
 
 ---
@@ -375,6 +577,11 @@ Run through this before saying any Swiss-design work is finished:
 - [ ] No emojis, no AI-marketing clichés in the visible copy
 - [ ] No equal-three-card feature row (the most generic AI layout)
 - [ ] Real images only — every stock-shaped photo is deleted or replaced
+- [ ] Lenis smooth scroll installed and configured with `lerp: 0.08`
+- [ ] All animations respect `prefers-reduced-motion`
+- [ ] Dark mode supported via `@media (prefers-color-scheme: dark)` in §6
+- [ ] `font-optical-sizing: auto` set on root element
+- [ ] `lang` attribute on `<html>` uses regional subtag (`de-CH`, `fr-CH`, `it-CH`)
 
 ---
 
@@ -382,13 +589,22 @@ Run through this before saying any Swiss-design work is finished:
 
 When applied to a project:
 
+**Setup (before step 1):** Install Lenis smooth scroll as the page foundation before writing any other JS. Low `lerp` = Swiss deliberateness; high `lerp` = consumer-app bounciness:
+```js
+import Lenis from 'lenis'
+import 'lenis/dist/lenis.css'   // path varies by Lenis version; check docs
+const lenis = new Lenis({ lerp: 0.08, duration: 1.2 })
+function raf(time) { lenis.raf(time); requestAnimationFrame(raf) }
+requestAnimationFrame(raf)
+```
+
 1. **Confirm the brand inputs:** paper substrate, ink shade, single accent (or two-shade brand pair), font choice (one neo-grotesque + optional editorial serif). If missing, ask.
 2. **Lock the spacing scale and type scale** as CSS variables before touching components. These are the foundation; changing them later is painful.
 3. **Build the macro-whitespace and grid first.** Get the rhythm right with empty sections before populating content. The page should look correct as wireframe.
 4. **Establish the typographic hierarchy** — set H1, H2, body, eyebrow, micro-label classes globally.
 5. **Add components** — arrow-in-circle CTA, hairline card, form pattern, eyebrow tag — using the global scale.
 6. **Add the ambient layer + film grain** as page-level fixtures.
-7. **Layer entry reveals** with IntersectionObserver. Stagger via `--i`.
+7. **Layer entry reveals** — CSS scroll-driven (`animation-timeline: view()`) preferred, IntersectionObserver as fallback (see §8 pattern #6). Stagger via `--i`.
 8. **One wow moment per major section.** Choose from §8. Do not stack three.
 9. **Run the §12 checklist.**
 10. **Refine with adjacent skills** (`arrange`, `typeset`, `quieter`, `polish`) if available.
