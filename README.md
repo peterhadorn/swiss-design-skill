@@ -1,8 +1,21 @@
 # Swiss Design Skill
 
-A skill for AI coding agents that teaches them to build websites in the **Swiss / International Typographic Style** — Müller-Brockmann grids, neo-grotesque type, ink-on-paper restraint, modern agency-grade idioms.
+A skill for AI coding agents that builds websites in the Swiss design tradition. Strict grids, neo-grotesque typography, restrained color, deliberate whitespace. Produces output that looks built, not generated.
 
-Produces output that looks deliberately built — not "another AI landing page."
+## What "Swiss design" actually means
+
+"Swiss design" is the common shorthand for the **International Typographic Style**, a design discipline that emerged from Basel and Zurich in the late 1940s and dominated graphic design for decades. The skill translates its print principles to the web.
+
+Two books anchor the discipline:
+
+- **Josef Müller-Brockmann, [*Grid Systems in Graphic Design*](https://en.wikipedia.org/wiki/Grid_Systems_in_Graphic_Design) (1981).** The modular grid as information architecture.
+- **Emil Ruder, [*Typography*](https://en.wikipedia.org/wiki/Emil_Ruder) (1967).** Typographic hierarchy through scale, weight, and spacing alone, without decoration.
+
+**"Neo-grotesque"** is the category of sans-serif typefaces that defines the visual register: Helvetica, Univers, Akzidenz-Grotesk, and modern descendants like Suisse Int'l, Söhne, GT America. ([Neo-grotesque on Wikipedia](https://en.wikipedia.org/wiki/Sans-serif#Neo-grotesque))
+
+The modern web idioms layered on top (Lenis smooth scroll, oklch color, View Transitions, ambient parallax) come from observing award-winning agencies working in this lineage: Mobiliar, Doppio, favorit.studio, eseagency.ch, Stink Studios, Raffinerie AG, Studio375.
+
+This is not "minimalist" or "clean design" generically. It is a specific information-design discipline with sources.
 
 ## What's inside
 
@@ -41,8 +54,11 @@ Invoke when the brief calls for Swiss, editorial, minimalist-premium, agency-cle
 
 ## License
 
-MIT — see [LICENSE](./LICENSE).
+MIT. See [LICENSE](./LICENSE).
 
-## Credits
+## References
 
-Built on Müller-Brockmann's *Grid Systems* (1981) and Ruder's *Typography* (1967), translated into 2026 web idioms. Synthesized from award-winning Swiss agency websites.
+- Josef Müller-Brockmann, *Grid Systems in Graphic Design* (Niggli Verlag, 1981)
+- Emil Ruder, *Typography: A Manual of Design* (Niggli Verlag, 1967)
+- Richard Hollis, *Swiss Graphic Design: The Origins and Growth of an International Style 1920-1965* (Yale University Press, 2006)
+- Modern Swiss agency websites: protekta.mobiliar.ch, doppio.li, favorit.studio, eseagency.ch, ewm.swiss, stinkstudios.com, raffinerie.com
