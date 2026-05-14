@@ -15,8 +15,6 @@ Two books anchor the discipline:
 
 The modern web idioms layered on top (Lenis smooth scroll, oklch color, View Transitions, ambient parallax) come from observing contemporary Swiss and Swiss-influenced studios working in this lineage.
 
-This is not "minimalist" or "clean design" generically. It is a specific information-design discipline with sources.
-
 ## What's inside
 
 - Strict bans on AI-template fingerprints (Inter, purple gradients, glassmorphism, shadcn defaults, Tailwind UI hero, bento-as-default)
