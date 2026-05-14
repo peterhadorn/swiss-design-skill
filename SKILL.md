@@ -69,6 +69,13 @@ A design that contains any of the following has failed:
 - Decorative icons-with-rounded-corners above every heading. (The templated AI-tell.)
 - Emojis. Anywhere. Including code, alt text, copy.
 
+### Banned 2026 AI-template fingerprints
+- **shadcn/ui defaults verbatim** — `bg-zinc-950` dark cards with `border-zinc-800`, the "AI startup" aesthetic. Restyle if you must use shadcn primitives.
+- **Tailwind UI hero patterns** — centered hero with radial-gradient blur (the "Spotlight" template). Instantly readable as template.
+- **Vercel deploy template aesthetic** — Inter + linear gradient mesh + dark glass card.
+- **Linear / Cal.com glass header** — `backdrop-filter: blur(16px); background: rgba(...,0.6)` outside one restrained nav use.
+- **Bento grid as default layout** — 3×2 cards-of-varying-sizes is now an AI tell. Use only when content genuinely demands it.
+
 ### Banned motion
 - Default `linear` or `ease-in-out` transitions. Slop tells.
 - `window.addEventListener('scroll')` for entry animations. Use CSS `animation-timeline: view()` (preferred) or `IntersectionObserver` (fallback). See §8 pattern #6.
@@ -161,6 +168,7 @@ html {
   font-optical-sizing: auto;        /* enables opsz axis in variable fonts */
   text-rendering: optimizeLegibility;
   -webkit-text-size-adjust: 100%;
+  hanging-punctuation: first last allow-end;  /* Safari today; progressive */
 }
 body {
   font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
@@ -171,6 +179,17 @@ h1, h2, h3, h4 {
 }
 p, li, figcaption, blockquote { text-wrap: pretty; }
 ```
+
+**Font loading — `font-display: optional`** — never FOUT-flash. With `optional`, the browser swaps the custom font only if it loaded in the first ~100ms; otherwise the page renders in fallback and stays that way for the session. Premium Swiss-agency discipline:
+```css
+@font-face {
+  font-family: 'Suisse Int\'l';
+  src: url('SuisseIntl-Variable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-display: optional;
+}
+```
+Pair the fallback stack to match metrics (`size-adjust`, `ascent-override`, `descent-override`) so any swap is invisible.
 
 **Variable font intermediate weights** — variable fonts allow sub-step precision:
 ```css
@@ -225,7 +244,21 @@ Use `color-mix(in oklab, ...)` for tints instead of adding new variables:
 ```
 
 ### Dark mode
-Swiss dark mode is not CSS `invert`. It is a deliberate substrate swap — dark ink on dark paper. Grain blend mode flips from `multiply` to `screen`:
+Swiss dark mode is not CSS `invert`. It is a deliberate substrate swap — dark ink on dark paper. Grain blend mode flips from `multiply` to `screen`.
+
+Required `<head>` meta — without it, browser chrome (scrollbars, root background) stays light even when CSS switches:
+```html
+<meta name="color-scheme" content="light dark">
+```
+
+Swiss-themed thin scrollbars (works in both schemes):
+```css
+:root {
+  scrollbar-color: var(--rule) var(--paper);
+  scrollbar-width: thin;
+}
+```
+
 ```css
 @media (prefers-color-scheme: dark) {
   :root {
@@ -290,6 +323,42 @@ If the brand has two related shades (e.g., a deep and bright variant of the same
     flex: 0 0 clamp(280px, 45vw, 640px);
   }
   ```
+- **Pull quote:** Swiss editorial signature. Italic editorial serif at display size, hairline above and below, generous block padding:
+  ```css
+  .pullquote {
+    font-family: var(--font-serif);
+    font-size: var(--text-3xl);
+    line-height: 1.1; letter-spacing: -0.02em;
+    font-style: italic;
+    text-wrap: balance;
+    border-block: 1px solid var(--rule);
+    padding-block: var(--space-lg);
+    margin-block: var(--space-xl);
+  }
+  .pullquote cite {
+    display: block; margin-top: var(--space-md);
+    font-family: var(--font-sans); font-style: normal;
+    font-size: var(--text-xs); text-transform: uppercase;
+    letter-spacing: 0.18em;
+  }
+  ```
+
+### Section counters — "01 / 06" in the corner
+Pattern referenced in §7 hero options. Native CSS counters, no JS:
+```css
+body { counter-reset: total 6 section; }    /* set total per page */
+.section { counter-increment: section; position: relative; }
+.section::before {
+  content: counter(section, decimal-leading-zero) ' / '
+           counter(total,   decimal-leading-zero);
+  position: absolute;
+  top: var(--space-md); right: var(--space-md);
+  font-size: var(--text-xs);
+  letter-spacing: 0.18em;
+  font-variant-numeric: tabular-nums;
+  color: color-mix(in oklab, var(--ink) 60%, transparent);
+}
+```
 
 ### Footer
 - Multi-column with hairline rules between columns (Doppio idiom).
@@ -460,12 +529,21 @@ input, textarea, [contenteditable] { cursor: text; }   /* preserve I-beam */
 ```
 ```js
 const cursor = document.querySelector('.cursor')
-document.addEventListener('mousemove', ({ clientX: x, clientY: y }) => {
-  // Center the dot/ring on the cursor position
-  cursor.style.translate =
-    `${x - cursor.offsetWidth / 2}px ${y - cursor.offsetHeight / 2}px`
-  if (!cursor.classList.contains('is-active')) cursor.classList.add('is-active')
+let pending = false, lastX = 0, lastY = 0
+
+document.addEventListener('mousemove', ({ clientX, clientY }) => {
+  lastX = clientX; lastY = clientY
+  if (pending) return
+  pending = true
+  // Throttle to rAF — mousemove can fire 1000+/sec; one DOM write per frame is enough.
+  requestAnimationFrame(() => {
+    cursor.style.translate =
+      `${lastX - cursor.offsetWidth / 2}px ${lastY - cursor.offsetHeight / 2}px`
+    if (!cursor.classList.contains('is-active')) cursor.classList.add('is-active')
+    pending = false
+  })
 })
+
 document.querySelectorAll('a, button').forEach(el => {
   el.addEventListener('mouseenter', () => cursor.classList.add('on-interactive'))
   el.addEventListener('mouseleave', () => cursor.classList.remove('on-interactive'))
@@ -530,6 +608,18 @@ For named transitions (hero image persisting across pages), add `view-transition
 - Numbers in tabular figures, monospace if data-heavy.
 - Row hover: subtle background tint, no transformation.
 
+### Focus styles
+Default browser focus halos are banned. Swiss replacement — thin accent outline, generous offset, keyboard-only:
+```css
+:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 4px;
+  border-radius: 2px;
+}
+:focus:not(:focus-visible) { outline: none; }   /* mouse focus stays clean */
+```
+Never `outline: none` without a `:focus-visible` replacement — that's an accessibility failure.
+
 ---
 
 ## 10. Imagery direction
@@ -539,6 +629,26 @@ For named transitions (hero image persisting across pages), add `view-transition
 - **Illustrations:** if any, monochromatic continuous-line sketches with one offset shape filled in the brand accent. Hand-drawn feel, not vector-clean.
 - **Diagrams / mockups:** wire-style simplicity. Hairline strokes. The browser/device frame, if used, is minimal — three small dots for window controls, no chrome decoration.
 - **Apply a 3–5% warm grain overlay** to all photographic imagery to integrate it with the paper substrate.
+
+### Image treatment CSS
+Concrete starter for the photographic discipline above — desaturate slightly, add hairline contrast bump, layer grain through pseudo-element:
+```css
+img:not(.no-treatment) {
+  filter: saturate(0.9) contrast(1.02);
+}
+figure {
+  position: relative;
+  isolation: isolate;
+}
+figure::after {                       /* warm grain over photos */
+  content: '';
+  position: absolute; inset: 0;
+  background: url('noise.svg') repeat;
+  opacity: 0.04;
+  mix-blend-mode: multiply;
+  pointer-events: none;
+}
+```
 
 ---
 
@@ -553,35 +663,74 @@ For named transitions (hero image persisting across pages), add `view-transition
 - Custom cursor: hide entirely on touch via `@media (hover: none)` (handled in §8 pattern #12).
 - Never `100vh` for hero — use `min-height: 100dvh`.
 
+### Performance for long Swiss pages
+Swiss publications are long. Defer off-screen sections from rendering:
+```css
+section {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 800px;       /* estimate; prevents scrollbar jumps */
+}
+```
+Saves render cost on initial paint and below-fold scroll. Pairs naturally with Lenis.
+
+### Print stylesheet
+Swiss tradition IS print. The site should print cleanly — strip chrome, restore black ink on white, expose link targets, prevent orphans:
+```css
+@media print {
+  .ambient, .grain, .cursor, nav, footer { display: none; }
+  body { background: white; color: black; max-width: 65ch; margin: 0 auto; }
+  a::after { content: ' (' attr(href) ')'; font-size: 0.85em; color: #555; }
+  h1, h2, h3 { page-break-after: avoid; }
+  p, li     { orphans: 3; widows: 3; }
+  img      { max-width: 100%; page-break-inside: avoid; }
+}
+```
+
 ---
 
 ## 12. Anti-pattern checklist (before declaring done)
 
 Run through this before saying any Swiss-design work is finished:
 
+### Foundation
+- [ ] CSS variables for spacing scale (no raw pixel values)
+- [ ] `lang` attribute on `<html>` uses regional subtag (`de-CH`, `fr-CH`, `it-CH`)
+- [ ] `<meta name="color-scheme" content="light dark">` in `<head>`
+- [ ] `font-optical-sizing: auto` set on root element
+
+### Typography
 - [ ] No Inter, Roboto, Open Sans, Arial in the font stack
+- [ ] Fonts loaded with `font-display: optional` (no FOUT-flash)
+- [ ] At least one type-as-architecture moment on the page
+- [ ] Body line-height 1.55–1.7, max 65–75 characters per line
+- [ ] Eyebrow tag pattern used consistently across major sections
+- [ ] Hyphenation enabled for body, disabled for headlines
+
+### Color
 - [ ] One accent color in the entire palette (count uses in CSS — should be < 10)
 - [ ] No purple, no three-color gradients, no glassmorphism
+- [ ] Dark mode supported via `@media (prefers-color-scheme: dark)`
+- [ ] All hairlines `1px` at low contrast; no thick borders or heavy shadows
+- [ ] Subtle film grain or warm noise overlay for substrate texture
+
+### Layout
 - [ ] Hero is left-aligned (not centered)
 - [ ] No `max-width` on text elements (`p`, `h1-h6`, `li`, `span`)
 - [ ] Section padding from a CSS variable scale (not raw pixels)
-- [ ] At least one type-as-architecture moment on the page
-- [ ] CTAs use the arrow-in-circle pattern, custom cubic-bezier easing
-- [ ] Eyebrow tag pattern used consistently across major sections
-- [ ] Ambient parallax layer present (one, slow, low opacity)
-- [ ] Subtle film grain or warm noise overlay for substrate texture
-- [ ] Forms have label-above-field and hairline-only borders
-- [ ] All hairlines `1px` at low contrast; no thick borders or heavy shadows
-- [ ] Body line-height 1.55–1.7, max 65–75 characters per line
-- [ ] Mobile uses `100dvh` not `100vh`
-- [ ] No emojis, no AI-marketing clichés in the visible copy
 - [ ] No equal-three-card feature row (the most generic AI layout)
-- [ ] Real images only — every stock-shaped photo is deleted or replaced
+- [ ] Mobile uses `100dvh` not `100vh`
+
+### Motion & interaction
 - [ ] Lenis smooth scroll installed and configured with `lerp: 0.08`
+- [ ] CTAs use the arrow-in-circle pattern, custom cubic-bezier easing
 - [ ] All animations respect `prefers-reduced-motion`
-- [ ] Dark mode supported via `@media (prefers-color-scheme: dark)` in §6
-- [ ] `font-optical-sizing: auto` set on root element
-- [ ] `lang` attribute on `<html>` uses regional subtag (`de-CH`, `fr-CH`, `it-CH`)
+- [ ] Ambient parallax layer present (one, slow, low opacity)
+
+### Accessibility & craft
+- [ ] `:focus-visible` styled with Swiss accent outline; never `outline: none` without replacement
+- [ ] Forms have label-above-field and hairline-only borders
+- [ ] Real images only — every stock-shaped photo is deleted or replaced
+- [ ] No emojis, no AI-marketing clichés in the visible copy
 
 ---
 
@@ -621,8 +770,9 @@ When **redesigning an existing site**:
 The skill is a synthesis of:
 - Müller-Brockmann, *Grid Systems in Graphic Design* (1981)
 - Emil Ruder, *Typography* (1967)
-- Modern Swiss-influenced agency websites: Mobiliar (protekta.mobiliar.ch), seoagentur.de, doppio.li, favorit.studio, eseagency.ch, ewm.swiss, Stink Studios
-- The `minimalist-ui`, `high-end-visual-design`, `industrial-brutalist-ui`, and `redesign-existing-projects` skills from the taste-skill collection (Leonxlnx)
+- Modern Swiss-influenced agency websites: Mobiliar (protekta.mobiliar.ch), seoagentur.de, doppio.li, favorit.studio, eseagency.ch, ewm.swiss, Stink Studios, Raffinerie AG, Studio375
+- Tools & specs: Lenis (lenis.dev), CSS Scroll-Driven Animations (Chrome 115+, Safari 26+), View Transitions API (Chrome 111+, Safari 18.2+), `oklch()` (Baseline 2023), `hanging-punctuation` (Safari)
+- Adjacent skills (taste-skill collection, Leonxlnx): `minimalist-ui`, `high-end-visual-design`, `industrial-brutalist-ui`, `redesign-existing-projects`, `overdrive`, `polish`, `arrange`, `typeset`
 
 ---
 
@@ -632,3 +782,106 @@ The skill is a synthesis of:
 - **SaaS / dashboard heavy data UI:** consider `industrial-brutalist-ui`'s Tactical Telemetry mode or a dashboard-specific skill.
 - **Brutalist-aggressive aesthetic:** use `industrial-brutalist-ui` directly; this skill is the conservative-editorial cousin.
 - **AI-startup or consumer-tech vibe:** use `minimalist-ui` directly; this skill assumes Swiss/editorial register.
+
+---
+
+## 16. Starter HTML skeleton
+
+A minimal foundation that applies every rule in §3–§11. Copy, then strip what's not needed:
+
+```html
+<!DOCTYPE html>
+<html lang="de-CH">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>...</title>
+  <style>
+    :root {
+      --paper:  oklch(98% 0.005 90);
+      --ink:    oklch(15% 0.010 260);
+      --rule:   oklch(92% 0.005 90);
+      --accent: oklch(48% 0.180 25);
+      --space-xs: 0.5rem;  --space-sm: 1rem;   --space-md: 1.5rem;
+      --space-lg: 2.5rem;  --space-xl: 4rem;   --space-2xl: 6rem;
+      --space-3xl: 8rem;   --space-4xl: 12rem;
+      --text-base: clamp(1rem, 0.95rem + 0.25vw, 1.125rem);
+      --text-4xl:  clamp(3rem, 2.2rem + 3.5vw, 5.5rem);
+      scrollbar-color: var(--rule) var(--paper);
+      scrollbar-width: thin;
+    }
+    html {
+      font-optical-sizing: auto;
+      text-rendering: optimizeLegibility;
+      hanging-punctuation: first last allow-end;
+    }
+    body {
+      background: var(--paper); color: var(--ink);
+      font-family: 'Suisse Int\'l', 'Inter Tight', system-ui, sans-serif;
+      font-size: var(--text-base);
+      line-height: 1.6;
+      font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
+      cursor: none;
+    }
+    input, textarea, [contenteditable] { cursor: text; }
+    h1, h2, h3 { text-wrap: balance; line-height: 1.1; }
+    p, li      { text-wrap: pretty; }
+    :lang(de), :lang(de-CH) { hyphens: auto; hyphenate-limit-chars: 8 4 3; }
+    :lang(fr), :lang(fr-CH) { hyphens: auto; hyphenate-limit-chars: 10 4 3; }
+    h1, h2, h3, .eyebrow    { hyphens: none; }
+    :focus-visible {
+      outline: 2px solid var(--accent); outline-offset: 4px; border-radius: 2px;
+    }
+    .ambient {
+      position: fixed; inset: 0; z-index: 0; pointer-events: none;
+      background: radial-gradient(circle at 30% 40%,
+        color-mix(in oklab, var(--accent) 100%, transparent) 0%,
+        transparent 60%);
+      opacity: 0.04;
+      animation: drift 45s ease-in-out infinite alternate;
+    }
+    @keyframes drift { to { transform: translate(8vw, -6vh) scale(1.1); } }
+    .cursor {
+      position: fixed; top: 0; left: 0; width: 8px; height: 8px;
+      border-radius: 50%; background: var(--accent);
+      pointer-events: none; z-index: 9999; opacity: 0;
+      transition: opacity 200ms, width 200ms, height 200ms, background 200ms;
+    }
+    .cursor.is-active { opacity: 1; }
+    .cursor.on-interactive {
+      width: 32px; height: 32px;
+      background: transparent; border: 1px solid var(--accent);
+    }
+    @media (hover: none) { body { cursor: auto; } .cursor { display: none; } }
+    section { content-visibility: auto; contain-intrinsic-size: 0 800px; }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --paper:  oklch(12% 0.010 260);
+        --ink:    oklch(94% 0.005 90);
+        --rule:   oklch(20% 0.010 260);
+      }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient"></div>
+  <div class="cursor"></div>
+  <!-- nav, sections, footer -->
+  <script type="module">
+    import Lenis from 'https://esm.sh/lenis'
+    const lenis = new Lenis({ lerp: 0.08, duration: 1.2 })
+    function raf(t) { lenis.raf(t); requestAnimationFrame(raf) }
+    requestAnimationFrame(raf)
+  </script>
+</body>
+</html>
+```
+
+This skeleton ships: oklch palette, dark mode, reduced-motion, hyphenation, Lenis, ambient layer, focus styles, hanging-punctuation, optical sizing, scrollbar, custom cursor, `content-visibility` perf. ~100 lines of foundation. Add components and section content on top.
