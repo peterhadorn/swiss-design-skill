@@ -13,7 +13,7 @@ Two books anchor the discipline:
 
 **"Neo-grotesque"** is the category of sans-serif typefaces that defines the visual register: Helvetica, Univers, Akzidenz-Grotesk, and modern descendants like Suisse Int'l, Söhne, GT America. ([Neo-grotesque on Wikipedia](https://en.wikipedia.org/wiki/Sans-serif#Neo-grotesque))
 
-The modern web idioms layered on top (Lenis smooth scroll, oklch color, View Transitions, ambient parallax) come from observing award-winning agencies working in this lineage: Mobiliar, Doppio, favorit.studio, eseagency.ch, Stink Studios, Raffinerie AG, Studio375.
+The modern web idioms layered on top (Lenis smooth scroll, oklch color, View Transitions, ambient parallax) come from observing contemporary Swiss and Swiss-influenced studios working in this lineage.
 
 This is not "minimalist" or "clean design" generically. It is a specific information-design discipline with sources.
 
@@ -46,7 +46,7 @@ Symlink instead if you want one source of truth with live updates.
 
 ## Use
 
-Invoke when the brief calls for Swiss, editorial, minimalist-premium, agency-clean, or references agencies like Mobiliar, Doppio, favorit.studio, eseagency.ch, Stink Studios.
+Invoke when the brief calls for Swiss, editorial, minimalist-premium, or agency-clean.
 
 ```
 /swiss-design
@@ -61,4 +61,3 @@ MIT. See [LICENSE](./LICENSE).
 - Josef Müller-Brockmann, *Grid Systems in Graphic Design* (Niggli Verlag, 1981)
 - Emil Ruder, *Typography: A Manual of Design* (Niggli Verlag, 1967)
 - Richard Hollis, *Swiss Graphic Design: The Origins and Growth of an International Style 1920-1965* (Yale University Press, 2006)
-- Modern Swiss agency websites: protekta.mobiliar.ch, doppio.li, favorit.studio, eseagency.ch, ewm.swiss, stinkstudios.com, raffinerie.com
